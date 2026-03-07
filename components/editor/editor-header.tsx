@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -13,6 +13,9 @@ import {
   Circle,
   LayoutGrid,
   Share2,
+  Eye,
+  Pencil,
+  ChevronDown,
 } from "lucide-react";
 import { useMapStore } from "@/stores/map-store";
 import { cn } from "@/lib/utils/cn";
@@ -29,6 +32,9 @@ export function EditorHeader({ mapId, saving, saved, onSave }: EditorHeaderProps
   const { title, setTitle, isDirty, nodes, autoLayout } = useMapStore();
   const [editingTitle, setEditingTitle] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
 
   const undo = useMapStore.temporal.getState().undo;
   const redo = useMapStore.temporal.getState().redo;
@@ -38,6 +44,58 @@ export function EditorHeader({ mapId, saving, saved, onSave }: EditorHeaderProps
       if (!window.confirm("Tem alteracoes nao salvas. Deseja sair?")) return;
     }
     router.push("/admin/maps");
+  };
+
+  // Close share dropdown on outside click
+  useEffect(() => {
+    if (!shareOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
+        setShareOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [shareOpen]);
+
+  const handleShareView = async () => {
+    try {
+      await fetch(`/api/v1/maps/${mapId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "published" }),
+      });
+      const res = await fetch(`/api/v1/maps/${mapId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const url = `${window.location.origin}/m/${data.slug}`;
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        setShareOpen(false);
+      }
+    } catch {
+      // silently fail
+    }
+  };
+
+  const handleShareEdit = async () => {
+    setShareLoading(true);
+    try {
+      const res = await fetch(`/api/v1/maps/${mapId}/share`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        const url = `${window.location.origin}/edit/${data.share_token}`;
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        setShareOpen(false);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setShareLoading(false);
+    }
   };
 
   return (
@@ -134,34 +192,54 @@ export function EditorHeader({ mapId, saving, saved, onSave }: EditorHeaderProps
           Layout
         </button>
 
-        {/* Share */}
-        <button
-          onClick={async () => {
-            try {
-              await fetch(`/api/v1/maps/${mapId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: "published" }),
-              });
-              const res = await fetch(`/api/v1/maps/${mapId}`);
-              if (res.ok) {
-                const data = await res.json();
-                const url = `${window.location.origin}/m/${data.slug}`;
-                await navigator.clipboard.writeText(url);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }
-            } catch {
-              // silently fail
-            }
-          }}
-          disabled={nodes.length === 0}
-          title="Publicar e copiar link"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-[#82B4C4] hover:bg-[#82B4C4]/10 transition-colors disabled:opacity-30"
-        >
-          <Share2 size={14} />
-          {copied ? "Copiado!" : "Compartilhar"}
-        </button>
+        {/* Share Dropdown */}
+        <div className="relative" ref={shareRef}>
+          <button
+            onClick={() => setShareOpen(!shareOpen)}
+            disabled={nodes.length === 0}
+            title="Compartilhar"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-[#82B4C4] hover:bg-[#82B4C4]/10 transition-colors disabled:opacity-30"
+          >
+            <Share2 size={14} />
+            {copied ? "Copiado!" : "Compartilhar"}
+            <ChevronDown size={10} className={cn("transition-transform", shareOpen && "rotate-180")} />
+          </button>
+
+          {shareOpen && (
+            <div className="absolute right-0 top-full mt-1.5 w-56 bg-surface border border-border rounded-lg shadow-lg overflow-hidden z-50">
+              <button
+                onClick={handleShareView}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-elevated/70 transition-colors"
+              >
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#82B4C4]/10 shrink-0">
+                  <Eye size={13} className="text-[#82B4C4]" />
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-primary">Link de visualizacao</div>
+                  <div className="text-[10px] text-muted">Publica e copia link somente leitura</div>
+                </div>
+              </button>
+              <div className="h-px bg-border" />
+              <button
+                onClick={handleShareEdit}
+                disabled={shareLoading}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-elevated/70 transition-colors disabled:opacity-50"
+              >
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#C4A882]/10 shrink-0">
+                  {shareLoading ? (
+                    <Loader2 size={13} className="text-[#C4A882] animate-spin" />
+                  ) : (
+                    <Pencil size={13} className="text-[#C4A882]" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-primary">Link de edicao</div>
+                  <div className="text-[10px] text-muted">Qualquer pessoa com o link pode editar</div>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="h-5 w-px bg-border mx-1" />
 

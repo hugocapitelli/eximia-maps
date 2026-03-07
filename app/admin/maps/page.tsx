@@ -19,14 +19,109 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface MapNodeData {
+  label: string;
+  color: string;
+  level: number;
+}
+
+interface MapNode {
+  id: string;
+  position: { x: number; y: number };
+  data: MapNodeData;
+}
+
+interface MapEdge {
+  id: string;
+  source: string;
+  target: string;
+}
+
+interface MapData {
+  nodes?: MapNode[];
+  edges?: MapEdge[];
+}
+
 interface MindMapItem {
   id: string;
   title: string;
   description: string | null;
   status: string;
   node_count: number;
+  data: MapData | null;
   created_at: string;
   updated_at: string;
+}
+
+function MapPreview({ nodes, edges }: { nodes: MapNode[]; edges: MapEdge[] }) {
+  if (!nodes || nodes.length === 0) {
+    return (
+      <div className="w-full h-24 rounded-lg bg-elevated/50 flex items-center justify-center">
+        <Map size={20} className="text-muted/30" />
+      </div>
+    );
+  }
+
+  const xs = nodes.map((n) => n.position.x);
+  const ys = nodes.map((n) => n.position.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const rangeX = maxX - minX || 1;
+  const rangeY = maxY - minY || 1;
+  const padding = 12;
+  const svgW = 260;
+  const svgH = 96;
+  const innerW = svgW - padding * 2;
+  const innerH = svgH - padding * 2;
+
+  const scale = (n: MapNode) => ({
+    x: padding + ((n.position.x - minX) / rangeX) * innerW,
+    y: padding + ((n.position.y - minY) / rangeY) * innerH,
+  });
+
+  const nodeLookup: Record<string, MapNode> = {};
+  for (const n of nodes) nodeLookup[n.id] = n;
+
+  return (
+    <div className="w-full h-24 rounded-lg bg-elevated/50 overflow-hidden">
+      <svg width="100%" height="100%" viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="xMidYMid meet">
+        {edges.map((e) => {
+          const src = nodeLookup[e.source];
+          const tgt = nodeLookup[e.target];
+          if (!src || !tgt) return null;
+          const p1 = scale(src);
+          const p2 = scale(tgt);
+          return (
+            <line
+              key={e.id}
+              x1={p1.x}
+              y1={p1.y}
+              x2={p2.x}
+              y2={p2.y}
+              stroke="rgba(255,255,255,0.08)"
+              strokeWidth={1}
+            />
+          );
+        })}
+        {nodes.map((n) => {
+          const p = scale(n);
+          const isRoot = n.data.level === 0;
+          return (
+            <circle
+              key={n.id}
+              cx={p.x}
+              cy={p.y}
+              r={isRoot ? 4 : 2.5}
+              fill={n.data.color || "#82B4C4"}
+              opacity={isRoot ? 1 : 0.7}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
 }
 
 export default function MapsListPage() {
@@ -219,7 +314,11 @@ export default function MapsListPage() {
                   </div>
                 </div>
               </div>
-              <h3 className="font-medium text-sm group-hover:text-[#82B4C4] transition-colors truncate mb-1">
+              <MapPreview
+                nodes={(map.data?.nodes as MapNode[]) || []}
+                edges={(map.data?.edges as MapEdge[]) || []}
+              />
+              <h3 className="font-medium text-sm group-hover:text-[#82B4C4] transition-colors truncate mb-1 mt-3">
                 {map.title}
               </h3>
               {map.description && (

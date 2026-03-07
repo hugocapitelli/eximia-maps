@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { ToastProvider } from "@/components/ui/toast";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -86,6 +87,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="border-t border-border p-3 space-y-1">
+            <ThemeToggle />
             <button
               onClick={handleSignOut}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted hover:bg-elevated hover:text-primary"
@@ -148,7 +150,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     );
                   })}
                 </div>
-                <div className="border-t border-border pt-3">
+                <div className="border-t border-border pt-3 space-y-1">
+                  <ThemeToggle className="w-full px-4 py-3 gap-3" />
                   <button
                     onClick={() => { setMobileOpen(false); handleSignOut(); }}
                     className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-muted hover:bg-elevated hover:text-primary"

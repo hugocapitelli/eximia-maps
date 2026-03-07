@@ -9,7 +9,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("mind_maps")
-    .select("id, title, description, status, node_count, created_at, updated_at")
+    .select("id, title, description, status, node_count, data, created_at, updated_at")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
 
