@@ -85,35 +85,35 @@
    ============================================ */
 
 [data-theme="light"] {
-  /* Core Surfaces */
-  --c-bg: 250 248 245;         /* #FAF8F5 warm white */
-  --c-surface: 255 255 255;    /* #FFFFFF */
-  --c-elevated: 245 243 239;   /* #F5F3EF warm gray */
-  --c-overlay: 235 232 228;    /* #EBE8E4 */
+  /* Core Surfaces — warm but with clear hierarchy */
+  --c-bg: 245 242 238;         /* #F5F2EE warm linen */
+  --c-surface: 255 255 255;    /* #FFFFFF crisp white */
+  --c-elevated: 249 247 244;   /* #F9F7F4 subtle lift */
+  --c-overlay: 240 237 233;    /* #F0EDE9 */
 
-  /* Border Scale */
-  --c-border: 218 214 208;     /* #DAD6D0 */
-  --c-border-light: 228 224 218; /* #E4E0DA */
-  --c-border-hover: 198 194 188; /* #C6C2BC */
+  /* Border Scale — visible but not harsh */
+  --c-border: 210 205 198;     /* #D2CDC6 */
+  --c-border-light: 225 221 216; /* #E1DDD8 */
+  --c-border-hover: 185 180 172; /* #B9B4AC */
 
-  /* Text Scale */
-  --c-primary: 26 26 26;       /* #1A1A1A */
-  --c-cream-dim: 82 78 72;     /* #524E48 */
-  --c-muted: 140 136 130;      /* #8C8882 */
+  /* Text Scale — strong contrast */
+  --c-primary: 18 18 18;       /* #121212 near-black */
+  --c-cream-dim: 68 64 58;     /* #44403A warm dark */
+  --c-muted: 118 114 108;      /* #76726C readable gray */
 
-  /* Accent: Warm Brown (slightly darker for contrast) */
-  --c-accent: 176 148 110;     /* #B0946E */
-  --c-accent-dim: 139 115 85;
-  --c-accent-hover: 156 128 90;
+  /* Accent: Warm Brown (rich on light) */
+  --c-accent: 162 134 96;      /* #A28660 */
+  --c-accent-dim: 130 105 72;
+  --c-accent-hover: 145 118 82;
 
   /* Accent Alt: Sage Green */
-  --c-accent-alt: 100 134 119;
-  --c-accent-alt-dim: 80 110 95;
+  --c-accent-alt: 88 122 107;
+  --c-accent-alt-dim: 70 100 85;
 
-  /* Product: Warm Teal (darker for light bg contrast) */
-  --c-teal: 90 145 165;        /* #5A91A5 */
-  --c-teal-dim: 70 120 140;
-  --c-teal-hover: 110 165 185;
+  /* Product: Warm Teal (punchy on light) */
+  --c-teal: 68 128 150;        /* #448096 */
+  --c-teal-dim: 52 105 125;
+  --c-teal-hover: 88 148 170;
 
   /* Semantic Status */
   --c-success: 22 163 74;
@@ -122,15 +122,15 @@
   --c-info: 37 99 235;
 
   /* Hex aliases */
-  --bg: #FAF8F5;
+  --bg: #F5F2EE;
   --surface: #FFFFFF;
-  --elevated: #F5F3EF;
-  --border: #DAD6D0;
-  --primary: #1A1A1A;
-  --accent: #B0946E;
-  --accent-alt: #648677;
-  --teal: #5A91A5;
-  --muted: #8C8882;
+  --elevated: #F9F7F4;
+  --border: #D2CDC6;
+  --primary: #121212;
+  --accent: #A28660;
+  --accent-alt: #587A6B;
+  --teal: #448096;
+  --muted: #76726C;
 }
 
 /* ======================================================================
@@ -250,6 +250,31 @@ body {
 [data-theme="light"] .glass-panel {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgb(var(--c-border));
+}
+
+/* Light mode depth — subtle shadows replace dark mode's brightness contrast */
+[data-theme="light"] {
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+  --shadow-card-hover: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.05);
+  --shadow-sidebar: 2px 0 8px rgba(0,0,0,0.03);
+}
+
+/* Sidebar shadow in light mode */
+[data-theme="light"] aside {
+  box-shadow: var(--shadow-sidebar);
+}
+
+/* Input fields in light mode — subtle inset */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* Logo inversion for light mode */
+[data-theme="light"] aside img[alt="eximIA"],
+[data-theme="light"] header img[alt="eximIA"] {
+  filter: brightness(0) saturate(100%);
 }
 
 /* ======================================================================
