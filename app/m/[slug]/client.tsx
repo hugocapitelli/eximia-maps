@@ -37,6 +37,7 @@ function PublicCanvas({ mapData }: { mapData: MapData }) {
       fitViewOptions={{ padding: 0.3 }}
       minZoom={0.05}
       maxZoom={3}
+      panOnDrag={true}
       panOnScroll
       zoomOnDoubleClick={false}
       nodesDraggable={false}

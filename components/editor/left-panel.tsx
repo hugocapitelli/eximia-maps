@@ -13,10 +13,17 @@ import {
   Layers,
   Leaf,
   ClipboardPaste,
-  Pencil,
   AlertCircle,
   Upload,
   LayoutTemplate,
+  Search,
+  BookmarkPlus,
+  Briefcase,
+  GraduationCap,
+  Palette,
+  Target,
+  User,
+  X,
 } from "lucide-react";
 import { useMapStore } from "@/stores/map-store";
 import { cn } from "@/lib/utils/cn";
@@ -543,14 +550,32 @@ export function LeftPanel() {
   );
 }
 
-// ─── Templates Grid ─────────────────────────────────────────────────────────
+// ─── Templates Grid (Marketplace) ───────────────────────────────────────────
+
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; icon: typeof Briefcase }> = {
+  all: { label: "Todos", color: "#82B4C4", icon: LayoutTemplate },
+  business: { label: "Negócios", color: "#C4A882", icon: Briefcase },
+  academic: { label: "Acadêmico", color: "#82B4C4", icon: GraduationCap },
+  creative: { label: "Criativo", color: "#C48BB4", icon: Palette },
+  productivity: { label: "Produtividade", color: "#7C9E8F", icon: Target },
+  custom: { label: "Meus Templates", color: "#8B9CC4", icon: User },
+};
 
 function TemplatesGrid() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { setMap } = useMapStore();
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const [saving, setSaving] = useState(false);
+  const [showSaveForm, setShowSaveForm] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [saveDesc, setSaveDesc] = useState("");
+  const [saveCategory, setSaveCategory] = useState("business");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const { nodes, edges, title, setMap } = useMapStore();
 
-  useEffect(() => {
+  const loadTemplates = useCallback(() => {
+    setLoading(true);
     fetch("/api/v1/templates")
       .then((res) => res.json())
       .then((data) => {
@@ -560,34 +585,248 @@ function TemplatesGrid() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return <div className="px-4 pb-4 text-xs text-muted text-center">Carregando...</div>;
-  }
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
-  if (templates.length === 0) {
-    return <div className="px-4 pb-4 text-xs text-muted text-center">Nenhum template disponivel</div>;
-  }
+  const filteredTemplates = templates.filter((t) => {
+    const matchesCategory = category === "all" || t.category === category || (category === "custom" && !t.is_public);
+    const matchesSearch = !search.trim() || t.name.toLowerCase().includes(search.toLowerCase()) || (t.description || "").toLowerCase().includes(search.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleSaveAsTemplate = async () => {
+    if (!saveName.trim() || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch("/api/v1/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: saveName.trim(),
+          description: saveDesc.trim(),
+          category: saveCategory,
+          data: { nodes, edges, title },
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao salvar template");
+      }
+      setShowSaveForm(false);
+      setSaveName("");
+      setSaveDesc("");
+      loadTemplates();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Determine if user has custom templates
+  const hasUserTemplates = templates.some((t) => !t.is_public);
+
+  const categoryKeys = ["all", "business", "academic", "creative", "productivity"];
+  if (hasUserTemplates) categoryKeys.push("custom");
 
   return (
-    <div className="px-4 pb-4 grid grid-cols-1 gap-2">
-      {templates.map((t) => (
+    <div className="px-4 pb-4 space-y-3">
+      {/* Search */}
+      <div className="relative">
+        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar templates..."
+          className={cn(
+            "w-full bg-bg/50 border border-border rounded-lg pl-7 pr-7 py-2",
+            "text-xs text-primary placeholder:text-muted",
+            "focus:outline-none focus:border-[#8B9CC4]/50 focus:ring-1 focus:ring-[#8B9CC4]/20"
+          )}
+        />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary"
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
+
+      {/* Category Pills */}
+      <div className="flex flex-wrap gap-1.5">
+        {categoryKeys.map((key) => {
+          const config = CATEGORY_CONFIG[key];
+          if (!config) return null;
+          const isActive = category === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setCategory(key)}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all border",
+                isActive
+                  ? "border-transparent text-bg"
+                  : "border-border text-cream-dim hover:border-border-light"
+              )}
+              style={isActive ? { backgroundColor: config.color } : undefined}
+            >
+              <config.icon size={10} />
+              {config.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Templates List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 size={16} className="animate-spin text-muted" />
+        </div>
+      ) : filteredTemplates.length === 0 ? (
+        <div className="text-xs text-muted text-center py-4">
+          {search ? "Nenhum template encontrado" : "Nenhum template nesta categoria"}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-0.5">
+          {filteredTemplates.map((t) => {
+            const catConfig = CATEGORY_CONFIG[t.category] || CATEGORY_CONFIG.business;
+            const isUserTemplate = !t.is_public;
+            const CatIcon = catConfig.icon;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setMap(t.name, t.data.nodes, t.data.edges)}
+                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-[#8B9CC4]/30 hover:bg-[#8B9CC4]/5 transition-all text-left group"
+              >
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-md shrink-0"
+                  style={{ backgroundColor: `${catConfig.color}15` }}
+                >
+                  <CatIcon size={14} style={{ color: catConfig.color }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-medium text-primary truncate">{t.name}</span>
+                    {isUserTemplate && (
+                      <span className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-[#8B9CC4]/15 text-[#8B9CC4]">
+                        Meu
+                      </span>
+                    )}
+                  </div>
+                  {t.description && (
+                    <div className="text-[10px] text-muted mt-0.5 line-clamp-2">{t.description}</div>
+                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className="text-[9px] px-1.5 py-0.5 rounded font-medium"
+                      style={{
+                        backgroundColor: `${catConfig.color}15`,
+                        color: catConfig.color,
+                      }}
+                    >
+                      {catConfig.label}
+                    </span>
+                    <span className="text-[10px] text-muted/60">{t.node_count || t.data?.nodes?.length || 0} nodes</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Save as Template */}
+      {nodes.length > 0 && !showSaveForm && (
         <button
-          key={t.id}
-          onClick={() => setMap(t.name, t.data.nodes, t.data.edges)}
-          className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-[#8B9CC4]/30 hover:bg-[#8B9CC4]/5 transition-all text-left"
+          onClick={() => {
+            setSaveName(title || "");
+            setShowSaveForm(true);
+          }}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-medium transition-all",
+            "border border-dashed border-[#8B9CC4]/40 text-[#8B9CC4] hover:bg-[#8B9CC4]/10 hover:border-[#8B9CC4]/60"
+          )}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#8B9CC4]/10 shrink-0">
-            <LayoutTemplate size={14} className="text-[#8B9CC4]" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-medium text-primary truncate">{t.name}</div>
-            {t.description && (
-              <div className="text-[10px] text-muted mt-0.5 truncate">{t.description}</div>
-            )}
-            <div className="text-[10px] text-muted/60 mt-0.5">{t.node_count} nodes</div>
-          </div>
+          <BookmarkPlus size={14} />
+          Salvar como template
         </button>
-      ))}
+      )}
+
+      {/* Save Form */}
+      {showSaveForm && (
+        <div className="space-y-2 rounded-lg border border-[#8B9CC4]/30 bg-[#8B9CC4]/5 p-3">
+          <div className="text-xs font-semibold text-primary">Salvar como template</div>
+          <input
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            placeholder="Nome do template"
+            className={cn(
+              "w-full bg-bg/50 border border-border rounded-md px-2.5 py-1.5",
+              "text-xs text-primary placeholder:text-muted",
+              "focus:outline-none focus:border-[#8B9CC4]/50"
+            )}
+          />
+          <input
+            value={saveDesc}
+            onChange={(e) => setSaveDesc(e.target.value)}
+            placeholder="Descricao (opcional)"
+            className={cn(
+              "w-full bg-bg/50 border border-border rounded-md px-2.5 py-1.5",
+              "text-xs text-primary placeholder:text-muted",
+              "focus:outline-none focus:border-[#8B9CC4]/50"
+            )}
+          />
+          <div className="flex flex-wrap gap-1">
+            {["business", "academic", "creative", "productivity"].map((cat) => {
+              const config = CATEGORY_CONFIG[cat];
+              if (!config) return null;
+              const isActive = saveCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSaveCategory(cat)}
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[10px] font-medium transition-all border",
+                    isActive
+                      ? "border-transparent text-bg"
+                      : "border-border text-cream-dim"
+                  )}
+                  style={isActive ? { backgroundColor: config.color } : undefined}
+                >
+                  {config.label}
+                </button>
+              );
+            })}
+          </div>
+          {saveError && (
+            <div className="text-[11px] text-red-400">{saveError}</div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setShowSaveForm(false); setSaveError(null); }}
+              className="flex-1 py-1.5 rounded-md text-xs text-cream-dim border border-border hover:bg-elevated transition-all"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSaveAsTemplate}
+              disabled={!saveName.trim() || saving}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all",
+                "bg-[#8B9CC4] text-bg hover:bg-[#9DADD5]",
+                "disabled:opacity-40 disabled:pointer-events-none"
+              )}
+            >
+              {saving ? <Loader2 size={12} className="animate-spin" /> : <BookmarkPlus size={12} />}
+              Salvar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

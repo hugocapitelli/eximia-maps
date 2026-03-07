@@ -13,7 +13,6 @@ import {
   type OnEdgesChange,
   BackgroundVariant,
   ReactFlowProvider,
-  SelectionMode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -159,8 +158,7 @@ function MapCanvasInner() {
       fitViewOptions={{ padding: 0.3 }}
       minZoom={0.05}
       maxZoom={3}
-      selectionOnDrag
-      selectionMode={SelectionMode.Partial}
+      panOnDrag={true}
       panOnScroll
       zoomOnDoubleClick={false}
       multiSelectionKeyCode="Shift"
