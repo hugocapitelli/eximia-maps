@@ -1,0 +1,195 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   EXIMIA MAPS — DESIGN SYSTEM
+   Warm Minimalism · Dark-First · Teal Accent
+   Teal (#82B4C4) + Black (#0A0A0A) + Brown (#C4A882)
+   ============================================ */
+
+:root {
+  /* ---- Core Surfaces ---- */
+  --c-bg: 10 10 10;
+  --c-surface: 17 17 17;
+  --c-elevated: 26 26 26;
+  --c-overlay: 34 34 34;
+
+  /* ---- Border Scale ---- */
+  --c-border: 42 42 42;
+  --c-border-light: 58 58 58;
+  --c-border-hover: 74 74 74;
+
+  /* ---- Text Scale ---- */
+  --c-primary: 232 224 213;
+  --c-cream-dim: 184 176 165;
+  --c-muted: 102 102 102;
+
+  /* ---- Accent: Warm Brown ---- */
+  --c-accent: 196 168 130;
+  --c-accent-dim: 139 115 85;
+  --c-accent-hover: 212 188 154;
+
+  /* ---- Accent Alt: Sage Green ---- */
+  --c-accent-alt: 124 158 143;
+  --c-accent-alt-dim: 90 122 107;
+
+  /* ---- Product: Warm Teal ---- */
+  --c-teal: 130 180 196;
+  --c-teal-dim: 85 130 145;
+  --c-teal-hover: 154 200 214;
+
+  /* ---- Semantic Status ---- */
+  --c-success: 34 197 94;
+  --c-warning: 245 158 11;
+  --c-danger: 239 68 68;
+  --c-info: 59 130 246;
+
+  /* Hex aliases */
+  --bg: #0A0A0A;
+  --surface: #111111;
+  --elevated: #1A1A1A;
+  --border: #2A2A2A;
+  --primary: #E8E0D5;
+  --accent: #C4A882;
+  --accent-alt: #7C9E8F;
+  --teal: #82B4C4;
+  --muted: #666666;
+
+  /* ---- Typography ---- */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ---- Animation ---- */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---- Node Colors (Mind Map) ---- */
+  --node-root: #82B4C4;
+  --node-branch-1: #C4A882;
+  --node-branch-2: #7C9E8F;
+  --node-branch-3: #8B9CC4;
+  --node-branch-4: #C48BB4;
+  --node-branch-5: #C49E8B;
+  --node-branch-6: #8BC4A8;
+  --node-branch-7: #B4C482;
+  --node-branch-8: #C4828B;
+}
+
+/* ======================================================================
+   BASE STYLES
+   ====================================================================== */
+
+body {
+  font-family: var(--font-sans);
+  background-color: rgb(var(--c-bg));
+  color: rgb(var(--c-primary));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: rgb(var(--c-teal) / 0.25);
+}
+
+/* ---- Custom Scrollbar ---- */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2A2A2A;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3A3A3A;
+}
+
+/* ======================================================================
+   REACT FLOW OVERRIDES
+   ====================================================================== */
+
+.react-flow__background {
+  background-color: rgb(var(--c-bg)) !important;
+}
+
+.react-flow__minimap {
+  background-color: rgb(var(--c-surface)) !important;
+  border: 1px solid rgb(var(--c-border)) !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__controls {
+  background-color: rgb(var(--c-surface)) !important;
+  border: 1px solid rgb(var(--c-border)) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__controls-button {
+  background-color: rgb(var(--c-surface)) !important;
+  border-bottom: 1px solid rgb(var(--c-border)) !important;
+  fill: rgb(var(--c-cream-dim)) !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: rgb(var(--c-elevated)) !important;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+.react-flow__attribution {
+  display: none !important;
+}
+
+/* ======================================================================
+   GLASS PANEL
+   ====================================================================== */
+
+.glass-panel {
+  background: rgba(17, 17, 17, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 12px;
+}
+
+/* ======================================================================
+   ANIMATIONS
+   ====================================================================== */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(130, 180, 196, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(130, 180, 196, 0.4); }
+}
+
+.animate-fade-in {
+  animation: fade-in var(--duration-slow) var(--ease-spring);
+}
+
+.animate-slide-in {
+  animation: slide-in-right var(--duration-slow) var(--ease-spring);
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
