@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
   Map,
+  LayoutTemplate,
   Menu,
   X,
   LogOut,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/maps", label: "Meus Mapas", icon: Map },
+  { href: "/admin/templates", label: "Templates", icon: LayoutTemplate },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
