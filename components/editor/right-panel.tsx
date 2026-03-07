@@ -15,11 +15,13 @@ import {
   Image,
   Code,
   FileText,
+  FileDown,
 } from "lucide-react";
 import { useMapStore } from "@/stores/map-store";
 import { NODE_COLORS } from "@/lib/types/mind-map";
 import { cn } from "@/lib/utils/cn";
 import { toPng, toSvg } from "html-to-image";
+import { jsPDF } from "jspdf";
 
 type Tab = "properties" | "chat" | "export";
 
@@ -353,6 +355,27 @@ function ExportPanel() {
     link.click();
   }, [title]);
 
+  const handleExportPDF = useCallback(async () => {
+    const el = getFlowElement();
+    if (!el) return;
+    setExporting("pdf");
+    try {
+      const dataUrl = await toPng(el, { backgroundColor: "#0A0A0A", pixelRatio: 2 });
+      const img = new window.Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+      const pdf = new jsPDF({
+        orientation: img.width > img.height ? "landscape" : "portrait",
+        unit: "px",
+        format: [img.width / 2, img.height / 2],
+      });
+      pdf.addImage(dataUrl, "PNG", 0, 0, img.width / 2, img.height / 2);
+      pdf.save(`${title || "mapa-mental"}.pdf`);
+    } finally {
+      setExporting(null);
+    }
+  }, [title]);
+
   if (nodes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
@@ -367,6 +390,7 @@ function ExportPanel() {
   const formats = [
     { id: "png", label: "PNG", desc: "Imagem alta resolucao (2x)", icon: Image, action: handleExportPNG },
     { id: "svg", label: "SVG", desc: "Vetorial, escalavel", icon: Code, action: handleExportSVG },
+    { id: "pdf", label: "PDF", desc: "Documento para impressao", icon: FileDown, action: handleExportPDF },
     { id: "json", label: "JSON", desc: "Dados importaveis", icon: FileText, action: handleExportJSON },
   ];
 

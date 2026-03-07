@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, use } from "react";
+import { useEffect, useState, useCallback, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { useMapStore } from "@/stores/map-store";
 import { MapCanvas } from "@/components/canvas/map-canvas";
@@ -14,9 +14,12 @@ function EditorContent({ mapId }: { mapId: string }) {
   const router = useRouter();
   const toast = useToast();
   const { title, nodes, edges, setTitle, setMap, clear, markClean } = useMapStore();
+  const isDirty = useMapStore((s) => s.isDirty);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -88,6 +91,20 @@ function EditorContent({ mapId }: { mapId: string }) {
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleSave]);
 
+  // Auto-save debounce
+  useEffect(() => {
+    if (!isDirty || mapId === "new") return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setAutoSaving(true);
+      await handleSave();
+      setAutoSaving(false);
+    }, 3000);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [isDirty, mapId, handleSave]);
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-bg">
@@ -112,6 +129,12 @@ function EditorContent({ mapId }: { mapId: string }) {
         {/* Canvas — Center */}
         <div className="flex-1 relative">
           <MapCanvas />
+          {autoSaving && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-surface/90 border border-border rounded-lg px-3 py-1.5 text-xs text-muted backdrop-blur-sm z-50">
+              <Loader2 size={12} className="animate-spin text-[#82B4C4]" />
+              Auto-salvando...
+            </div>
+          )}
         </div>
 
         {/* Right Panel — Properties / Chat / Export */}

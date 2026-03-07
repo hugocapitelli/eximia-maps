@@ -50,7 +50,7 @@ export default function LandingPage() {
         <h1 className="text-4xl md:text-5xl font-display font-bold text-primary mb-5 leading-tight">
           Mapas mentais com
           <br />
-          <span className="text-[#82B4C4]">inteligencia artificial</span>
+          <span className="text-[#82B4C4]">inteligência artificial</span>
         </h1>
 
         <p className="text-base text-cream-dim max-w-xl mb-10 leading-relaxed">
@@ -63,7 +63,7 @@ export default function LandingPage() {
             href="/admin"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#82B4C4] text-bg font-semibold text-sm hover:bg-[#9AC8D6] transition-colors"
           >
-            Comecar agora
+            Começar agora
             <ArrowRight size={16} />
           </Link>
           <Link
@@ -81,7 +81,7 @@ export default function LandingPage() {
           {[
             {
               icon: Sparkles,
-              label: "Geracao por IA",
+              label: "Geração por IA",
               desc: "Digite um tema e receba um mapa mental completo com branches, sub-items e hierarquia.",
               color: "#82B4C4",
             },
@@ -94,7 +94,7 @@ export default function LandingPage() {
             {
               icon: Map,
               label: "Canvas interativo",
-              desc: "Zoom, pan, drag & drop. Edite labels com duplo-clique. React Flow sob o capo.",
+              desc: "Zoom, pan, drag & drop. Edite labels com duplo-clique. React Flow sob o capô.",
               color: "#7C9E8F",
             },
             {
@@ -106,7 +106,7 @@ export default function LandingPage() {
             {
               icon: Zap,
               label: "4 estilos de mapa",
-              desc: "Equilibrado, academico, executivo ou criativo. Cada estilo gera mapas com personalidade diferente.",
+              desc: "Equilibrado, acadêmico, executivo ou criativo. Cada estilo gera mapas com personalidade diferente.",
               color: "#C48BB4",
             },
             {

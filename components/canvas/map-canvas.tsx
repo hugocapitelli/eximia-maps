@@ -59,6 +59,27 @@ function MapCanvasInner() {
   // Keyboard shortcuts
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
+      // Tab = add child to selected node
+      if (e.key === "Tab" && selectedNodeId) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+        e.preventDefault();
+        const store = useMapStore.getState();
+        store.addChildNode(selectedNodeId, "Novo node");
+      }
+
+      // Enter = add sibling (child of same parent)
+      if (e.key === "Enter" && selectedNodeId) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+        e.preventDefault();
+        const store = useMapStore.getState();
+        const parentEdge = store.edges.find((edge) => edge.target === selectedNodeId);
+        if (parentEdge) {
+          store.addChildNode(parentEdge.source, "Novo node");
+        }
+      }
+
       // Delete/Backspace to remove selected node (but not root)
       if ((e.key === "Delete" || e.key === "Backspace") && selectedNodeId) {
         const target = e.target as HTMLElement;

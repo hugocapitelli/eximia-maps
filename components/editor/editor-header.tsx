@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Circle,
   LayoutGrid,
+  Share2,
 } from "lucide-react";
 import { useMapStore } from "@/stores/map-store";
 import { cn } from "@/lib/utils/cn";
@@ -27,6 +28,7 @@ export function EditorHeader({ mapId, saving, saved, onSave }: EditorHeaderProps
   const router = useRouter();
   const { title, setTitle, isDirty, nodes, autoLayout } = useMapStore();
   const [editingTitle, setEditingTitle] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const undo = useMapStore.temporal.getState().undo;
   const redo = useMapStore.temporal.getState().redo;
@@ -130,6 +132,35 @@ export function EditorHeader({ mapId, saving, saved, onSave }: EditorHeaderProps
         >
           <LayoutGrid size={14} />
           Layout
+        </button>
+
+        {/* Share */}
+        <button
+          onClick={async () => {
+            try {
+              await fetch(`/api/v1/maps/${mapId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "published" }),
+              });
+              const res = await fetch(`/api/v1/maps/${mapId}`);
+              if (res.ok) {
+                const data = await res.json();
+                const url = `${window.location.origin}/m/${data.slug}`;
+                await navigator.clipboard.writeText(url);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }
+            } catch {
+              // silently fail
+            }
+          }}
+          disabled={nodes.length === 0}
+          title="Publicar e copiar link"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-[#82B4C4] hover:bg-[#82B4C4]/10 transition-colors disabled:opacity-30"
+        >
+          <Share2 size={14} />
+          {copied ? "Copiado!" : "Compartilhar"}
         </button>
 
         <div className="h-5 w-px bg-border mx-1" />

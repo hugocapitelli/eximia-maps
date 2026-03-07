@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Sparkles,
   Loader2,
@@ -15,6 +15,8 @@ import {
   ClipboardPaste,
   Pencil,
   AlertCircle,
+  Upload,
+  LayoutTemplate,
 } from "lucide-react";
 import { useMapStore } from "@/stores/map-store";
 import { cn } from "@/lib/utils/cn";
@@ -25,29 +27,29 @@ import type { MindMapNode, MindMapEdge } from "@/lib/types/mind-map";
 
 const STYLES = [
   { id: "default", label: "Equilibrado", desc: "Informativo e organizado" },
-  { id: "academic", label: "Academico", desc: "Tecnico com conceitos" },
-  { id: "business", label: "Executivo", desc: "Estrategia e KPIs" },
-  { id: "creative", label: "Criativo", desc: "Analogias e conexoes" },
+  { id: "academic", label: "Acadêmico", desc: "Técnico com conceitos" },
+  { id: "business", label: "Executivo", desc: "Estratégia e KPIs" },
+  { id: "creative", label: "Criativo", desc: "Analogias e conexões" },
 ] as const;
 
 const TEMPLATES = [
   { label: "Tema livre", prompt: "" },
-  { label: "Analise SWOT", prompt: "Analise SWOT de " },
+  { label: "Análise SWOT", prompt: "Análise SWOT de " },
   { label: "Plano de Projeto", prompt: "Plano de projeto para " },
   { label: "Estudo de Caso", prompt: "Estudo de caso sobre " },
   { label: "Brainstorm", prompt: "Brainstorm de ideias para " },
   { label: "Resumo de Livro", prompt: "Resumo estruturado do livro " },
-  { label: "EAP", prompt: "Estrutura analitica de projeto (EAP) para " },
+  { label: "EAP", prompt: "Estrutura analítica de projeto (EAP) para " },
 ];
 
 const NODE_TYPES = [
   { type: "root", label: "Raiz", icon: CircleDot, level: 0, desc: "Node central" },
   { type: "branch", label: "Branch", icon: GitBranch, level: 1, desc: "Ramo principal" },
-  { type: "sub", label: "Sub-item", icon: Layers, level: 2, desc: "Sub-ramificacao" },
+  { type: "sub", label: "Sub-item", icon: Layers, level: 2, desc: "Sub-ramificação" },
   { type: "leaf", label: "Folha", icon: Leaf, level: 3, desc: "Detalhe final" },
 ];
 
-type AIMode = "generate" | "import";
+type AIMode = "generate" | "import" | "json";
 
 let manualNodeId = 5000;
 
@@ -56,6 +58,7 @@ let manualNodeId = 5000;
 export function LeftPanel() {
   const [aiExpanded, setAiExpanded] = useState(true);
   const [manualExpanded, setManualExpanded] = useState(true);
+  const [templatesExpanded, setTemplatesExpanded] = useState(false);
   const [aiMode, setAiMode] = useState<AIMode>("generate");
 
   // Generate state
@@ -85,7 +88,7 @@ export function LeftPanel() {
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Falha na geracao");
+        throw new Error(data.error || "Falha na geração");
       }
       const data = await response.json();
       setMap(data.title, data.nodes, data.edges);
@@ -111,7 +114,7 @@ export function LeftPanel() {
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Falha na importacao");
+        throw new Error(data.error || "Falha na importação");
       }
       const data = await response.json();
       setMap(data.title, data.nodes, data.edges);
@@ -194,7 +197,7 @@ export function LeftPanel() {
               className={cn("text-muted transition-transform", aiExpanded && "rotate-90")}
             />
             <Sparkles size={12} className="text-[#82B4C4]" />
-            <span className="text-sm font-semibold text-primary">Inteligencia Artificial</span>
+            <span className="text-sm font-semibold text-primary">Inteligência Artificial</span>
             <span className="ml-auto text-[9px] text-muted/50 bg-[#82B4C4]/10 px-1.5 py-0.5 rounded">
               AI
             </span>
@@ -227,6 +230,18 @@ export function LeftPanel() {
                 >
                   <ClipboardPaste size={10} />
                   Importar
+                </button>
+                <button
+                  onClick={() => { setAiMode("json"); setError(null); }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-medium transition-all",
+                    aiMode === "json"
+                      ? "bg-surface text-[#82B4C4] shadow-sm"
+                      : "text-muted hover:text-primary"
+                  )}
+                >
+                  <Upload size={10} />
+                  JSON
                 </button>
               </div>
 
@@ -321,13 +336,13 @@ export function LeftPanel() {
               {aiMode === "import" && (
                 <>
                   <div className="rounded-lg border border-[#82B4C4]/20 bg-[#82B4C4]/5 px-3 py-2.5 text-[11px] text-[#82B4C4]/80 leading-relaxed">
-                    Cole um fluxograma, outline, lista hierarquica, markdown ou qualquer texto estruturado. A IA converte em mapa mental preservando toda a hierarquia.
+                    Cole um fluxograma, outline, lista hierárquica, markdown ou qualquer texto estruturado. A IA converte em mapa mental preservando toda a hierarquia.
                   </div>
 
                   <textarea
                     value={importText}
                     onChange={(e) => setImportText(e.target.value)}
-                    placeholder={"Cole aqui seu conteudo...\n\nExemplos:\n- Fluxograma ASCII (┌─ ├─ └─)\n- Markdown (# ## ###)\n- Listas com indentacao\n- Outlines numerados"}
+                    placeholder={"Cole aqui seu conteúdo...\n\nExemplos:\n- Fluxograma ASCII (┌─ ├─ └─)\n- Markdown (# ## ###)\n- Listas com indentação\n- Outlines numerados"}
                     className={cn(
                       "w-full bg-bg/50 border border-border rounded-lg px-3 py-2",
                       "text-xs text-primary placeholder:text-muted/60",
@@ -371,6 +386,51 @@ export function LeftPanel() {
                       {nodes.length > 0 ? "Converter" : "Converter em mapa"}
                     </button>
                   </div>
+                </>
+              )}
+
+              {/* ── JSON Import Mode ──────────────────────────────── */}
+              {aiMode === "json" && (
+                <>
+                  <div className="rounded-lg border border-[#82B4C4]/20 bg-[#82B4C4]/5 px-3 py-2.5 text-[11px] text-[#82B4C4]/80 leading-relaxed">
+                    Importe um arquivo JSON exportado anteriormente pelo eximIA Maps.
+                  </div>
+
+                  <label
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-6 rounded-lg border-2 border-dashed transition-all cursor-pointer",
+                      "border-border hover:border-[#82B4C4]/40 hover:bg-[#82B4C4]/5"
+                    )}
+                  >
+                    <Upload size={24} className="text-muted" />
+                    <span className="text-xs text-cream-dim font-medium">Clique para selecionar arquivo</span>
+                    <span className="text-[10px] text-muted">.json</span>
+                    <input
+                      type="file"
+                      accept=".json"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          try {
+                            const data = JSON.parse(ev.target?.result as string);
+                            if (data.nodes && data.edges) {
+                              setMap(data.title || "Mapa importado", data.nodes, data.edges);
+                              setError(null);
+                            } else {
+                              setError("Arquivo JSON inválido. Deve conter nodes e edges.");
+                            }
+                          } catch {
+                            setError("Erro ao ler o arquivo JSON.");
+                          }
+                        };
+                        reader.readAsText(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
                 </>
               )}
 
@@ -459,7 +519,75 @@ export function LeftPanel() {
             </div>
           )}
         </div>
+
+        {/* ── Templates Section ────────────────────────────────────── */}
+        <div className="border-b border-border">
+          <button
+            onClick={() => setTemplatesExpanded(!templatesExpanded)}
+            className="flex items-center gap-2 w-full px-4 py-3 hover:bg-elevated/50 transition-colors"
+          >
+            <ChevronRight
+              size={12}
+              className={cn("text-muted transition-transform", templatesExpanded && "rotate-90")}
+            />
+            <LayoutTemplate size={12} className="text-[#8B9CC4]" />
+            <span className="text-sm font-semibold text-primary">Templates</span>
+          </button>
+
+          {templatesExpanded && (
+            <TemplatesGrid />
+          )}
+        </div>
       </div>
     </aside>
+  );
+}
+
+// ─── Templates Grid ─────────────────────────────────────────────────────────
+
+function TemplatesGrid() {
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { setMap } = useMapStore();
+
+  useEffect(() => {
+    fetch("/api/v1/templates")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setTemplates(data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <div className="px-4 pb-4 text-xs text-muted text-center">Carregando...</div>;
+  }
+
+  if (templates.length === 0) {
+    return <div className="px-4 pb-4 text-xs text-muted text-center">Nenhum template disponivel</div>;
+  }
+
+  return (
+    <div className="px-4 pb-4 grid grid-cols-1 gap-2">
+      {templates.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => setMap(t.name, t.data.nodes, t.data.edges)}
+          className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-[#8B9CC4]/30 hover:bg-[#8B9CC4]/5 transition-all text-left"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#8B9CC4]/10 shrink-0">
+            <LayoutTemplate size={14} className="text-[#8B9CC4]" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-medium text-primary truncate">{t.name}</div>
+            {t.description && (
+              <div className="text-[10px] text-muted mt-0.5 truncate">{t.description}</div>
+            )}
+            <div className="text-[10px] text-muted/60 mt-0.5">{t.node_count} nodes</div>
+          </div>
+        </button>
+      ))}
+    </div>
   );
 }
