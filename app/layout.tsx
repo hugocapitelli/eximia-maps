@@ -9,6 +9,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "eximIA Maps",
   description: "Criador de mapas mentais com IA",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
