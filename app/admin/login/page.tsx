@@ -1,53 +1,42 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { Suspense, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
+import { login } from "./actions";
 import { Button, Input } from "@/components/ui";
 import { ArrowRight, Lock } from "lucide-react";
 import Image from "next/image";
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/admin";
+  const redirectTo = searchParams.get("redirect") || "/admin";
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const formData = new FormData(e.currentTarget);
+    formData.set("redirect", redirectTo);
+
+    startTransition(async () => {
+      const result = await login(formData);
+      if (result?.error) {
+        setError(result.error);
+      }
     });
-
-    if (authError) {
-      console.error("Auth error:", JSON.stringify(authError, null, 2));
-      setError(`${authError.message} (${authError.status ?? "?"})`);
-      setLoading(false);
-      return;
-    }
-
-    router.push(redirect);
-    router.refresh();
   }
 
   return (
-    <form onSubmit={handleLogin} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label className="mb-1.5 block text-sm font-medium text-primary/80">
           Email
         </label>
         <Input
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          name="email"
           placeholder="seu@email.com"
           required
         />
@@ -58,8 +47,7 @@ function LoginForm() {
         </label>
         <Input
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          name="password"
           placeholder="••••••••"
           required
         />
@@ -71,8 +59,8 @@ function LoginForm() {
         </div>
       )}
 
-      <Button type="submit" disabled={loading} className="w-full gap-2">
-        {loading ? (
+      <Button type="submit" disabled={isPending} className="w-full gap-2">
+        {isPending ? (
           "Entrando..."
         ) : (
           <>
