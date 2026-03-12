@@ -255,43 +255,42 @@ export function LeftPanel() {
               {/* ── Generate Mode ──────────────────────────────────── */}
               {aiMode === "generate" && (
                 <>
-                  <div className="relative">
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleGenerate();
-                        }
-                      }}
-                      placeholder="Descreva o tema do mapa..."
-                      className={cn(
-                        "w-full bg-bg/50 border border-border rounded-lg px-3 py-2 pr-10",
-                        "text-xs text-primary placeholder:text-muted",
-                        "focus:outline-none focus:border-[#82B4C4]/50 focus:ring-1 focus:ring-[#82B4C4]/20",
-                        "resize-none min-h-[80px]"
-                      )}
-                      disabled={isGenerating}
-                    />
-                    <button
-                      onClick={handleGenerate}
-                      disabled={!prompt.trim() || isGenerating}
-                      className={cn(
-                        "absolute bottom-2 right-2 p-1.5 rounded-md transition-all",
-                        "disabled:opacity-30",
-                        prompt.trim() && !isGenerating
-                          ? "bg-[#82B4C4]/20 text-[#82B4C4] hover:bg-[#82B4C4]/30"
-                          : "text-muted"
-                      )}
-                    >
-                      {isGenerating ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Sparkles size={14} />
-                      )}
-                    </button>
-                  </div>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleGenerate();
+                      }
+                    }}
+                    placeholder="Descreva o tema do mapa..."
+                    className={cn(
+                      "w-full bg-bg/50 border border-border rounded-lg px-3 py-2",
+                      "text-xs text-primary placeholder:text-muted",
+                      "focus:outline-none focus:border-[#82B4C4]/50 focus:ring-1 focus:ring-[#82B4C4]/20",
+                      "resize-none min-h-[80px]"
+                    )}
+                    disabled={isGenerating}
+                  />
+
+                  <button
+                    onClick={handleGenerate}
+                    disabled={!prompt.trim() || isGenerating}
+                    className={cn(
+                      "w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all",
+                      "bg-[#82B4C4] text-[#0A0A0A] hover:bg-[#9AC8D6] active:scale-[0.98]",
+                      "shadow-sm shadow-[#82B4C4]/20 hover:shadow-md hover:shadow-[#82B4C4]/30",
+                      "disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none"
+                    )}
+                  >
+                    {isGenerating ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Sparkles size={14} />
+                    )}
+                    {isGenerating ? "Gerando mapa..." : "Gerar Mapa Mental"}
+                  </button>
 
                   {/* Style */}
                   <button

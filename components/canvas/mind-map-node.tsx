@@ -100,7 +100,7 @@ function MindMapNodeComponent({ id, data, selected }: MindMapNodeProps) {
 
       <div
         className={cn(
-          "px-4 py-2.5 rounded-xl border-2 transition-all",
+          "mind-map-card px-4 py-2.5 rounded-xl border-2 transition-all",
           "hover:shadow-lg cursor-pointer",
           selected && "ring-[3px]",
           isRoot && "px-6 py-4"
