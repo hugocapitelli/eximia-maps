@@ -28,7 +28,8 @@ function LoginForm() {
     });
 
     if (authError) {
-      setError("Email ou senha invalidos");
+      console.error("Auth error:", JSON.stringify(authError, null, 2));
+      setError(`${authError.message} (${authError.status ?? "?"})`);
       setLoading(false);
       return;
     }
