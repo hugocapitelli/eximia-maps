@@ -16,12 +16,15 @@ import {
   Code,
   FileText,
   FileDown,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useMapStore } from "@/stores/map-store";
 import { NODE_COLORS } from "@/lib/types/mind-map";
 import { cn } from "@/lib/utils/cn";
 import { toPng, toSvg } from "html-to-image";
 import { jsPDF } from "jspdf";
+import { getViewportForBounds } from "@xyflow/react";
 
 type Tab = "properties" | "chat" | "export";
 
@@ -312,38 +315,127 @@ function ChatPanel() {
 function ExportPanel() {
   const { title, nodes } = useMapStore();
   const [exporting, setExporting] = useState<string | null>(null);
+  const [exportTheme, setExportTheme] = useState<"dark" | "light">("dark");
+  const [exportProgress, setExportProgress] = useState<string | null>(null);
 
-  const getFlowElement = () => document.querySelector(".react-flow") as HTMLElement | null;
+  const getViewportEl = () => document.querySelector(".react-flow__viewport") as HTMLElement | null;
+  const getRfInstance = () => useMapStore.getState().reactFlowInstance;
+
+  const bgColor = exportTheme === "dark" ? "#0A0A0A" : "#F5F2EE";
+
+  /** Apply export theme temporarily, run fn, then restore. */
+  const withExportTheme = useCallback(
+    async <T,>(fn: () => Promise<T>): Promise<T> => {
+      const html = document.documentElement;
+      const original = html.getAttribute("data-theme");
+      if (exportTheme === "light") {
+        html.setAttribute("data-theme", "light");
+      } else {
+        html.removeAttribute("data-theme");
+      }
+      await new Promise((r) => requestAnimationFrame(r));
+      try {
+        return await fn();
+      } finally {
+        if (original) html.setAttribute("data-theme", original);
+        else html.removeAttribute("data-theme");
+      }
+    },
+    [exportTheme]
+  );
+
+  /**
+   * Render the FULL map content (not a viewport screenshot) via
+   * getNodesBounds → getViewportForBounds → toPng on .react-flow__viewport.
+   */
+  const renderFullContent = useCallback(
+    async (
+      viewportEl: HTMLElement,
+      rfInstance: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      opts: { width: number; height: number; pixelRatio: number; asSvg?: boolean }
+    ) => {
+      const internalNodes = rfInstance.getNodes();
+      const nodesBounds = rfInstance.getNodesBounds(internalNodes);
+      const vp = getViewportForBounds(
+        nodesBounds,
+        opts.width,
+        opts.height,
+        0.5,
+        2,
+        0.1
+      );
+      const styleOverride = {
+        width: `${opts.width}px`,
+        height: `${opts.height}px`,
+        transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
+      };
+      const renderFn = opts.asSvg ? toSvg : toPng;
+      return renderFn(viewportEl, {
+        backgroundColor: bgColor,
+        width: opts.width,
+        height: opts.height,
+        pixelRatio: opts.asSvg ? undefined : opts.pixelRatio,
+        style: styleOverride,
+      } as Parameters<typeof toPng>[1]);
+    },
+    [bgColor]
+  );
+
+  // ── PNG: Full-content render ──
 
   const handleExportPNG = useCallback(async () => {
-    const el = getFlowElement();
-    if (!el) return;
+    const viewportEl = getViewportEl();
+    const rf = getRfInstance();
+    if (!viewportEl || !rf) return;
     setExporting("png");
     try {
-      const dataUrl = await toPng(el, { backgroundColor: "#0A0A0A", pixelRatio: 2 });
+      const bounds = rf.getNodesBounds(rf.getNodes());
+      const PAD = 100;
+      const w = Math.ceil(bounds.width + PAD * 2);
+      const h = Math.ceil(bounds.height + PAD * 2);
+
+      const dataUrl = await withExportTheme(() =>
+        renderFullContent(viewportEl, rf, { width: w, height: h, pixelRatio: 2 })
+      );
       const link = document.createElement("a");
       link.download = `${title || "mapa-mental"}.png`;
       link.href = dataUrl;
       link.click();
+    } catch (err) {
+      console.error("PNG export failed:", err);
     } finally {
       setExporting(null);
     }
-  }, [title]);
+  }, [title, withExportTheme, renderFullContent]);
+
+  // ── SVG: Full-content render (vector) ──
 
   const handleExportSVG = useCallback(async () => {
-    const el = getFlowElement();
-    if (!el) return;
+    const viewportEl = getViewportEl();
+    const rf = getRfInstance();
+    if (!viewportEl || !rf) return;
     setExporting("svg");
     try {
-      const dataUrl = await toSvg(el, { backgroundColor: "#0A0A0A" });
+      const bounds = rf.getNodesBounds(rf.getNodes());
+      const PAD = 100;
+      const w = Math.ceil(bounds.width + PAD * 2);
+      const h = Math.ceil(bounds.height + PAD * 2);
+
+      const dataUrl = await withExportTheme(() =>
+        renderFullContent(viewportEl, rf, { width: w, height: h, pixelRatio: 1, asSvg: true })
+      );
       const link = document.createElement("a");
       link.download = `${title || "mapa-mental"}.svg`;
       link.href = dataUrl;
       link.click();
+    } catch (err) {
+      console.error("SVG export failed:", err);
     } finally {
       setExporting(null);
     }
-  }, [title]);
+  }, [title, withExportTheme, renderFullContent]);
+
+  // ── JSON ──
 
   const handleExportJSON = useCallback(() => {
     const store = useMapStore.getState();
@@ -355,26 +447,114 @@ function ExportPanel() {
     link.click();
   }, [title]);
 
+  // ── PDF: Overview + multi-page detail tiles at zoom 1:1 ──
+
   const handleExportPDF = useCallback(async () => {
-    const el = getFlowElement();
-    if (!el) return;
+    const viewportEl = getViewportEl();
+    const rf = getRfInstance();
+    if (!viewportEl || !rf) return;
+
     setExporting("pdf");
+    setExportProgress("Calculando layout...");
+
     try {
-      const dataUrl = await toPng(el, { backgroundColor: "#0A0A0A", pixelRatio: 2 });
-      const img = new window.Image();
-      img.src = dataUrl;
-      await new Promise((resolve) => { img.onload = resolve; });
-      const pdf = new jsPDF({
-        orientation: img.width > img.height ? "landscape" : "portrait",
-        unit: "px",
-        format: [img.width / 2, img.height / 2],
+      await withExportTheme(async () => {
+        const internalNodes = rf.getNodes();
+        const nodesBounds = rf.getNodesBounds(internalNodes);
+
+        const PAD = 80;
+        const contentX = nodesBounds.x - PAD;
+        const contentY = nodesBounds.y - PAD;
+        const contentW = nodesBounds.width + PAD * 2;
+        const contentH = nodesBounds.height + PAD * 2;
+
+        // A4 landscape proportions in content-pixels
+        const PAGE_W = 1400;
+        const PAGE_H = 990;
+
+        const cols = Math.ceil(contentW / PAGE_W);
+        const rows = Math.ceil(contentH / PAGE_H);
+        const totalDetailPages = cols * rows;
+        const totalPages = 1 + totalDetailPages;
+
+        const pdf = new jsPDF({
+          orientation: "landscape",
+          unit: "px",
+          format: [PAGE_W, PAGE_H],
+        });
+
+        // ── Page 1: Overview (full map fitted to one page) ──
+        setExportProgress("Gerando visão geral...");
+
+        const overviewVP = getViewportForBounds(nodesBounds, PAGE_W, PAGE_H, 0.01, 1, 0.12);
+        const overviewUrl = await toPng(viewportEl, {
+          backgroundColor: bgColor,
+          width: PAGE_W,
+          height: PAGE_H,
+          pixelRatio: 2,
+          style: {
+            width: `${PAGE_W}px`,
+            height: `${PAGE_H}px`,
+            transform: `translate(${overviewVP.x}px, ${overviewVP.y}px) scale(${overviewVP.zoom})`,
+          },
+        });
+        pdf.addImage(overviewUrl, "PNG", 0, 0, PAGE_W, PAGE_H);
+
+        const textColor = exportTheme === "dark" ? 180 : 60;
+        const mutedColor = exportTheme === "dark" ? 90 : 150;
+        pdf.setFontSize(12);
+        pdf.setTextColor(textColor);
+        pdf.text(title || "Mapa Mental", PAGE_W / 2, 28, { align: "center" });
+        pdf.setFontSize(8);
+        pdf.setTextColor(mutedColor);
+        pdf.text(
+          `Visão geral · ${totalDetailPages} página${totalDetailPages > 1 ? "s" : ""} detalhada${totalDetailPages > 1 ? "s" : ""} a seguir`,
+          PAGE_W / 2, 42, { align: "center" }
+        );
+
+        // ── Pages 2+: Detail tiles rendered at zoom 1:1 ──
+        let pageNum = 1;
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            pageNum++;
+            setExportProgress(`Gerando página ${pageNum}/${totalPages}...`);
+
+            pdf.addPage([PAGE_W, PAGE_H], "landscape");
+
+            const offsetX = contentX + col * PAGE_W;
+            const offsetY = contentY + row * PAGE_H;
+
+            const tileUrl = await toPng(viewportEl, {
+              backgroundColor: bgColor,
+              width: PAGE_W,
+              height: PAGE_H,
+              pixelRatio: 2,
+              style: {
+                width: `${PAGE_W}px`,
+                height: `${PAGE_H}px`,
+                transform: `translate(${-offsetX}px, ${-offsetY}px) scale(1)`,
+              },
+            });
+            pdf.addImage(tileUrl, "PNG", 0, 0, PAGE_W, PAGE_H);
+
+            pdf.setFontSize(7);
+            pdf.setTextColor(mutedColor);
+            pdf.text(
+              `${title || "Mapa Mental"} — Página ${pageNum}/${totalPages}`,
+              PAGE_W / 2, PAGE_H - 12, { align: "center" }
+            );
+          }
+        }
+
+        pdf.save(`${title || "mapa-mental"}.pdf`);
       });
-      pdf.addImage(dataUrl, "PNG", 0, 0, img.width / 2, img.height / 2);
-      pdf.save(`${title || "mapa-mental"}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
     } finally {
       setExporting(null);
+      setExportProgress(null);
     }
-  }, [title]);
+  }, [title, bgColor, withExportTheme, exportTheme]);
 
   if (nodes.length === 0) {
     return (
@@ -388,10 +568,10 @@ function ExportPanel() {
   }
 
   const formats = [
-    { id: "png", label: "PNG", desc: "Imagem alta resolucao (2x)", icon: Image, action: handleExportPNG },
-    { id: "svg", label: "SVG", desc: "Vetorial, escalavel", icon: Code, action: handleExportSVG },
-    { id: "pdf", label: "PDF", desc: "Documento para impressao", icon: FileDown, action: handleExportPDF },
-    { id: "json", label: "JSON", desc: "Dados importaveis", icon: FileText, action: handleExportJSON },
+    { id: "png", label: "PNG", desc: "Conteúdo completo, alta resolução", icon: Image, action: handleExportPNG },
+    { id: "svg", label: "SVG", desc: "Vetorial, escalável infinitamente", icon: Code, action: handleExportSVG },
+    { id: "pdf", label: "PDF", desc: "Multi-página, legível ao ampliar", icon: FileDown, action: handleExportPDF },
+    { id: "json", label: "JSON", desc: "Dados importáveis", icon: FileText, action: handleExportJSON },
   ];
 
   return (
@@ -399,6 +579,46 @@ function ExportPanel() {
       <h3 className="text-xs font-semibold uppercase tracking-widest text-muted mb-4">
         Exportar mapa
       </h3>
+
+      {/* Theme toggle */}
+      <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-bg/30 mb-1">
+        <span className="text-xs text-muted">Tema da exportação</span>
+        <div className="flex rounded-lg border border-border overflow-hidden">
+          <button
+            onClick={() => setExportTheme("dark")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors",
+              exportTheme === "dark"
+                ? "bg-[#82B4C4]/20 text-[#82B4C4]"
+                : "text-muted hover:text-primary"
+            )}
+          >
+            <Moon size={12} />
+            Escuro
+          </button>
+          <button
+            onClick={() => setExportTheme("light")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors",
+              exportTheme === "light"
+                ? "bg-[#82B4C4]/20 text-[#82B4C4]"
+                : "text-muted hover:text-primary"
+            )}
+          >
+            <Sun size={12} />
+            Claro
+          </button>
+        </div>
+      </div>
+
+      {/* Progress indicator */}
+      {exportProgress && (
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#82B4C4]/10 text-xs text-[#82B4C4]">
+          <Loader2 size={12} className="animate-spin shrink-0" />
+          {exportProgress}
+        </div>
+      )}
+
       {formats.map((f) => (
         <button
           key={f.id}

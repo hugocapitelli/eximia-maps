@@ -151,6 +151,7 @@ function MapCanvasInner() {
       onNodeClick={onNodeClick}
       onPaneClick={onPaneClick}
       onSelectionChange={onSelectionChange}
+      onInit={(instance) => useMapStore.getState().setReactFlowInstance(instance)}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       defaultEdgeOptions={defaultEdgeOptions}

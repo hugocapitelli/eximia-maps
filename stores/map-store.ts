@@ -12,6 +12,8 @@ interface MapState {
   isGenerating: boolean;
   isDirty: boolean;
   layoutVersion: number;
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  reactFlowInstance: any;
 
   setTitle: (title: string) => void;
   setMap: (title: string, nodes: MindMapNode[], edges: MindMapEdge[]) => void;
@@ -25,6 +27,8 @@ interface MapState {
   removeNode: (nodeId: string) => void;
   selectNode: (nodeId: string | null) => void;
   setGenerating: (isGenerating: boolean) => void;
+  setReactFlowInstance: (instance: any) => void;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
   autoLayout: () => void;
   markClean: () => void;
   clear: () => void;
@@ -42,6 +46,7 @@ export const useMapStore = create<MapState>()(
       isGenerating: false,
       isDirty: false,
       layoutVersion: 0,
+      reactFlowInstance: null,
 
       setTitle: (title) => set({ title, isDirty: true }),
 
@@ -152,6 +157,8 @@ export const useMapStore = create<MapState>()(
       selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
 
       setGenerating: (isGenerating) => set({ isGenerating }),
+
+      setReactFlowInstance: (instance) => set({ reactFlowInstance: instance }),
 
       autoLayout: () => {
         const state = get();
