@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Map,
   LayoutTemplate,
+  Settings,
   Menu,
   X,
   LogOut,
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/maps", label: "Meus Mapas", icon: Map },
   { href: "/admin/templates", label: "Templates", icon: LayoutTemplate },
+  { href: "/admin/settings/integrations", label: "Integrações", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
