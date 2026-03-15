@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { isGateEnabled, isAuthenticated, logout as gateLogout } from "@/lib/gate";
 import {
   LayoutDashboard,
   Map,
@@ -31,9 +32,21 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Gate mode: redirect to login if not authenticated
+  useEffect(() => {
+    if (isGateEnabled() && !isAuthenticated() && !pathname.includes("/login")) {
+      router.push("/admin/login");
+    }
+  }, [pathname, router]);
+
   async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    // Clear Gate tokens (works in both modes)
+    gateLogout();
+    // Also clear Supabase session (standalone mode)
+    if (!isGateEnabled()) {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    }
     router.push("/admin/login");
   }
 

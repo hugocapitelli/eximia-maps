@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { authFetch } from "@/lib/gate";
 import { Loader2 } from "lucide-react";
 
 export default function NewMapPage() {
@@ -10,7 +11,7 @@ export default function NewMapPage() {
   useEffect(() => {
     async function create() {
       try {
-        const res = await fetch("/api/v1/maps", {
+        const res = await authFetch("/api/v1/maps", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: "Mapa sem titulo" }),

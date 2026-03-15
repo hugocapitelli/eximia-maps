@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, use } from "react";
 import { useRouter } from "next/navigation";
+import { authFetch } from "@/lib/gate";
 import { useMapStore } from "@/stores/map-store";
 import { MapCanvas } from "@/components/canvas/map-canvas";
 import { EditorHeader } from "@/components/editor/editor-header";
@@ -30,7 +31,7 @@ function EditorContent({ mapId }: { mapId: string }) {
         return;
       }
       try {
-        const res = await fetch(`/api/v1/maps/${mapId}`);
+        const res = await authFetch(`/api/v1/maps/${mapId}`);
         if (res.ok) {
           const data = await res.json();
           setMap(data.title, data.data?.nodes || [], data.data?.edges || []);

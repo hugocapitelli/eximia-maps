@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { authFetch } from "@/lib/gate";
 import { Button, Input, Badge, Tabs } from "@/components/ui";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -121,7 +122,7 @@ function KeysTab() {
   const [scopes, setScopes] = useState<string[]>(["read"]);
 
   const loadKeys = useCallback(async () => {
-    const res = await fetch("/api/integrations/keys");
+    const res = await authFetch("/api/integrations/keys");
     if (res.ok) setKeys(await res.json());
     setLoading(false);
   }, []);
@@ -132,7 +133,7 @@ function KeysTab() {
     if (!appName.trim()) return;
     setCreating(true);
 
-    const res = await fetch("/api/integrations/keys", {
+    const res = await authFetch("/api/integrations/keys", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ app_name: appName.trim(), scopes }),
@@ -308,7 +309,7 @@ function ConnectionsTab() {
   const [apiKey, setApiKey] = useState("");
 
   const loadConnections = useCallback(async () => {
-    const res = await fetch("/api/integrations/connections");
+    const res = await authFetch("/api/integrations/connections");
     if (res.ok) setConnections(await res.json());
     setLoading(false);
   }, []);
@@ -319,7 +320,7 @@ function ConnectionsTab() {
     if (!remoteApp.trim() || !remoteUrl.trim() || !apiKey.trim()) return;
     setCreating(true);
 
-    const res = await fetch("/api/integrations/connections", {
+    const res = await authFetch("/api/integrations/connections", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -487,7 +488,7 @@ function LogsTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/integrations/logs")
+    authFetch("/api/integrations/logs")
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => { setLogs(data); setLoading(false); })
       .catch(() => setLoading(false));

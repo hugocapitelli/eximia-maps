@@ -3,8 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const gateUrl = process.env.GATE_URL;
 
 export async function middleware(request: NextRequest) {
+  // Gate mode: skip Supabase middleware — client-side handles auth
+  if (gateUrl) {
+    return NextResponse.next();
+  }
+
   if (!supabaseUrl || !supabaseKey) {
     return NextResponse.next();
   }

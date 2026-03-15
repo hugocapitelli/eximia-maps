@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { authFetch } from "@/lib/gate";
 import { Send, Loader2, Bot, User } from "lucide-react";
 import { useMapStore } from "@/stores/map-store";
 import { cn } from "@/lib/utils/cn";
@@ -37,7 +38,7 @@ export function ChatPanel() {
         .map((n) => `- ${n.data.label} (level ${n.data.level})`)
         .join("\n");
 
-      const response = await fetch("/api/ai/generate", {
+      const response = await authFetch("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

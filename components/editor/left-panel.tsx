@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { authFetch } from "@/lib/gate";
 import {
   Sparkles,
   Loader2,
@@ -88,7 +89,7 @@ export function LeftPanel() {
     setError(null);
     setGenerating(true);
     try {
-      const response = await fetch("/api/ai/generate", {
+      const response = await authFetch("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt.trim(), style, mode: "generate" }),
@@ -114,7 +115,7 @@ export function LeftPanel() {
     setError(null);
     setGenerating(true);
     try {
-      const response = await fetch("/api/ai/generate", {
+      const response = await authFetch("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: importText.trim(), mode: "import" }),
@@ -575,7 +576,7 @@ function TemplatesGrid() {
 
   const loadTemplates = useCallback(() => {
     setLoading(true);
-    fetch("/api/v1/templates")
+    authFetch("/api/v1/templates")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setTemplates(data);
@@ -599,7 +600,7 @@ function TemplatesGrid() {
     setSaving(true);
     setSaveError(null);
     try {
-      const res = await fetch("/api/v1/templates", {
+      const res = await authFetch("/api/v1/templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

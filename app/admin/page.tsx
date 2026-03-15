@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { authFetch } from "@/lib/gate";
 import { Card } from "@/components/ui";
 import {
   Map,
@@ -143,7 +143,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/v1/maps");
+        const res = await authFetch("/api/v1/maps");
         if (res.ok) {
           const data = await res.json();
           setMaps(data);

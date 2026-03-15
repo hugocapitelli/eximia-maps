@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { authFetch } from "@/lib/gate";
 import { Card, Badge, Input, Button } from "@/components/ui";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -65,7 +66,7 @@ export default function TemplatesPage() {
 
   const loadTemplates = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/templates");
+      const res = await authFetch("/api/v1/templates");
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) setTemplates(data);
@@ -105,7 +106,7 @@ export default function TemplatesPage() {
   async function handleUseTemplate(template: Template) {
     setCreating(template.id);
     try {
-      const res = await fetch("/api/v1/maps", {
+      const res = await authFetch("/api/v1/maps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

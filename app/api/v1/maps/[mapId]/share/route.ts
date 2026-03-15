@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthContext } from "@/lib/auth/helpers";
 import { randomBytes } from "crypto";
 
 // Generate or get share token for a map
@@ -8,9 +8,9 @@ export async function POST(
   { params }: { params: Promise<{ mapId: string }> }
 ) {
   const { mapId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await getAuthContext(request);
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { user, supabase } = auth;
 
   // Check ownership
   const { data: map } = await supabase
@@ -45,9 +45,9 @@ export async function DELETE(
   { params }: { params: Promise<{ mapId: string }> }
 ) {
   const { mapId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await getAuthContext(request);
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { user, supabase } = auth;
 
   const { error } = await supabase
     .from("mind_maps")

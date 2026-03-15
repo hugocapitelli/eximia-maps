@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { authFetch } from "@/lib/gate";
 import { Sparkles, Loader2, ChevronDown } from "lucide-react";
 import { useMapStore } from "@/stores/map-store";
 import { cn } from "@/lib/utils/cn";
@@ -33,7 +34,7 @@ export function GeneratePanel() {
 
     setGenerating(true);
     try {
-      const response = await fetch("/api/ai/generate", {
+      const response = await authFetch("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt.trim(), style }),

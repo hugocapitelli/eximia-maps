@@ -1,31 +1,37 @@
 "use client";
 
-import { Suspense, useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
-import { login } from "./actions";
+import { Suspense, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { gateLogin, saveAuth } from "@/lib/gate";
 import { Button, Input } from "@/components/ui";
 import { ArrowRight, Lock } from "lucide-react";
 import Image from "next/image";
 
 function LoginForm() {
   const [error, setError] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/admin";
+  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    formData.set("redirect", redirectTo);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-    startTransition(async () => {
-      const result = await login(formData);
-      if (result?.error) {
-        setError(result.error);
-      }
-    });
+    try {
+      const data = await gateLogin(email, password);
+      saveAuth(data);
+      router.push(redirectTo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha no login");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -59,8 +65,8 @@ function LoginForm() {
         </div>
       )}
 
-      <Button type="submit" disabled={isPending} className="w-full gap-2">
-        {isPending ? (
+      <Button type="submit" disabled={loading} className="w-full gap-2">
+        {loading ? (
           "Entrando..."
         ) : (
           <>
@@ -104,11 +110,12 @@ export default function LoginPage() {
           />
           <div className="mt-4 flex items-center gap-2">
             <div className="h-px w-8 bg-border" />
-            <span className="text-xs font-medium tracking-widest uppercase text-muted">
+            <span className="text-xs font-medium tracking-[0.25em] uppercase text-muted">
               Maps
             </span>
             <div className="h-px w-8 bg-border" />
           </div>
+          <div className="h-1 w-16 mt-2 rounded-full bg-[#82B4C4]" style={{ boxShadow: '0 0 12px #82B4C4' }} />
         </div>
 
         {/* Login card */}

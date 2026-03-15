@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { authFetch } from "@/lib/gate";
 import { Button, Card, Badge, Input, Dialog } from "@/components/ui";
 import { useToast } from "@/components/ui/toast";
 import { formatRelative } from "@/lib/utils";
@@ -136,7 +137,7 @@ export default function MapsListPage() {
 
   const loadMaps = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/maps");
+      const res = await authFetch("/api/v1/maps");
       if (res.ok) {
         setMaps(await res.json());
       }
@@ -151,7 +152,7 @@ export default function MapsListPage() {
 
   async function handleCreate() {
     try {
-      const res = await fetch("/api/v1/maps", {
+      const res = await authFetch("/api/v1/maps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: "Mapa sem titulo" }),
