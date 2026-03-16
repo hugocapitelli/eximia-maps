@@ -2,6 +2,16 @@ import { generateObject } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { mindMapSchema } from "@/lib/ai/schema";
 import { transformAIToReactFlow } from "@/lib/ai/transform";
+import { getAuthContext } from "@/lib/auth/helpers";
+import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  contract,
+  getUserPlan,
+  getQuotaUsage,
+  checkQuota,
+  isFeatureEnabled,
+  incrementQuota,
+} from "@/lib/productization";
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -19,6 +29,33 @@ export async function POST(request: Request) {
 
     if (!prompt || typeof prompt !== "string") {
       return Response.json({ error: "Prompt is required" }, { status: 400 });
+    }
+
+    // ─── Feature & Quota Gates ───
+    const auth = await getAuthContext(request);
+    if (auth) {
+      const db = createAdminClient();
+      const plan = await getUserPlan(db, contract, auth.user.id);
+
+      // Quota gate: AI generations
+      if (mode === "generate" || mode === "refine") {
+        const usage = await getQuotaUsage(db, contract, auth.user.id, "ai_generations");
+        const check = checkQuota(contract, plan, "ai_generations", usage);
+        if (!check.allowed) {
+          return Response.json(
+            { error: check.reason, code: "PLAN_LIMIT" },
+            { status: 403 }
+          );
+        }
+      }
+
+      // Feature gate: custom styles (academic, business, creative)
+      if (style !== "default" && !isFeatureEnabled(contract, plan, "custom_styles")) {
+        return Response.json(
+          { error: "Estilos customizados disponíveis no plano Pro. Faça upgrade para continuar.", code: "FEATURE_LOCKED" },
+          { status: 403 }
+        );
+      }
     }
 
     const styleInstructions: Record<string, string> = {
@@ -104,6 +141,12 @@ Regras:
     });
 
     const transformed = transformAIToReactFlow(result.object);
+
+    // Track AI usage after successful generation
+    if (auth && (mode === "generate" || mode === "refine")) {
+      const db = createAdminClient();
+      await incrementQuota(db, contract, auth.user.id, "ai_generations").catch(() => {});
+    }
 
     return Response.json(transformed);
   } catch (error) {

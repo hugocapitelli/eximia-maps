@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Map,
   LayoutTemplate,
+  Sparkles,
   Settings,
   Menu,
   X,
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/maps", label: "Meus Mapas", icon: Map },
   { href: "/admin/templates", label: "Templates", icon: LayoutTemplate },
+  { href: "/admin/upgrade", label: "Planos", icon: Sparkles },
   { href: "/admin/settings/integrations", label: "Integrações", icon: Settings },
 ];
 

@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthContext } from "@/lib/auth/helpers";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/utils";
+import { contract, getUserPlan, getQuotaUsage, checkQuota } from "@/lib/productization";
 
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext(request);
@@ -21,6 +23,18 @@ export async function POST(request: NextRequest) {
   const auth = await getAuthContext(request);
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { user, supabase } = auth;
+
+  // Quota gate: total maps
+  const db = createAdminClient();
+  const plan = await getUserPlan(db, contract, user.id);
+  const mapsUsage = await getQuotaUsage(db, contract, user.id, "maps");
+  const mapsCheck = checkQuota(contract, plan, "maps", mapsUsage);
+  if (!mapsCheck.allowed) {
+    return NextResponse.json(
+      { error: mapsCheck.reason, code: "PLAN_LIMIT" },
+      { status: 403 }
+    );
+  }
 
   const body = await request.json();
   const title = body.title || "Mapa sem titulo";
